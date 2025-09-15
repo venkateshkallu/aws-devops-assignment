@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Check - AWS DevOps Demo App</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header>
+        <h2>AWS DevOps Demo App</h2>
+    </header>
+    
+    <main>
+        <div class="container">
+            <h1>Health Status</h1>
+            <div class="health-status">
+                <div class="status-main">
+                    <span class="status-dot large"></span>
+                    <span class="status-text"><%= healthData.status %></span>
+                </div>
+            </div>
+            
+            <div class="health-details">
+                <h3>System Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Timestamp:</strong>
+                        <span><%= healthData.timestamp %></span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Uptime:</strong>
+                        <span><%= Math.floor(healthData.uptime) %> seconds</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Memory Usage:</strong>
+                        <span><%= Math.round(healthData.memory.used / 1024 / 1024) %> MB</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Hostname:</strong>
+                        <span><%= healthData.hostname %></span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Platform:</strong>
+                        <span><%= healthData.platform %></span>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="/" class="back-button">← Back to Home</a>
+        </div>
+    </main>
+    
+    <footer>
+        <p>Demo App – AWS DevOps</p>
+    </footer>
+</body>
+</html>
