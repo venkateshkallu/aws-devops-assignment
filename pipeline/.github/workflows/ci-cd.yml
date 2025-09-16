@@ -10,7 +10,7 @@ permissions:
   contents: read    # to checkout the repo
 
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: eu-north-1
   PROJECT_NAME: aws-devops-app
   ECR_REPO: aws-devops-app-repo
   ECS_CLUSTER: aws-devops-app-cluster

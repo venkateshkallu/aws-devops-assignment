@@ -1,10 +1,8 @@
-resource "aws_ecr_repository" "app" {
-  name = "${var.project_name}-repo"
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+resource "aws_ecr_repository" "app_repo" {
+  name = "aws-devops-app-repo"
+  image_tag_mutability = "MUTABLE"
 
-  tags = {
-    Name = "${var.project_name}-ecr"
+  encryption_configuration {
+    encryption_type = "AES256"
   }
 }

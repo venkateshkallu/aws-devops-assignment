@@ -1,20 +1,52 @@
+# ------------------------
+# ECS Cluster
+# ------------------------
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
 }
 
+# ------------------------
+# IAM Role for ECS Task Execution
+# ------------------------
+resource "aws_iam_role" "ecs_task_execution" {
+  name = "${var.project_name}-ecs-task-execution"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# ------------------------
+# ECS Task Definition
+# ------------------------
 resource "aws_ecs_task_definition" "app" {
   family                   = "${var.project_name}-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task_execution.arn
+
+  execution_role_arn = aws_iam_role.ecs_task_execution.arn
+  task_role_arn      = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
       name      = "app"
-      image     = "${aws_ecr_repository.app.repository_url}:latest"
+      image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
       essential = true
       portMappings = [
         {
@@ -23,10 +55,10 @@ resource "aws_ecs_task_definition" "app" {
         }
       ],
       logConfiguration = {
-        logDriver = "awslogs",
+        logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.app.name,
-          "awslogs-region"        = var.region,
+          "awslogs-group"         = aws_cloudwatch_log_group.app.name
+          "awslogs-region"        = var.region
           "awslogs-stream-prefix" = "ecs"
         }
       }
@@ -34,6 +66,9 @@ resource "aws_ecs_task_definition" "app" {
   ])
 }
 
+# ------------------------
+# ECS Service
+# ------------------------
 resource "aws_ecs_service" "app" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.main.id
@@ -42,9 +77,9 @@ resource "aws_ecs_service" "app" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = aws_subnet.public[*].id
+    subnets          = aws_subnet.public[*].id
     assign_public_ip = true
-    security_groups  = [aws_security_group.ecs.id]
+    security_groups  = [aws_security_group.alb_sg.id]  # linked to ALB SG
   }
 
   load_balancer {
