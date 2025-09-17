@@ -1,5 +1,0 @@
-2025-09-17 11:14:18 [INFO] Starting workflow synchronization
-2025-09-17 11:14:19 [INFO] YAML validation passed for: pipeline/ci-cd.yml
-2025-09-17 11:14:19 [INFO] Removed existing file: .github/workflows/ci-cd.yml
-2025-09-17 11:14:19 [INFO] Created symbolic link: .github/workflows/ci-cd.yml -> ../../pipeline/ci-cd.yml
-2025-09-17 11:14:19 [INFO] All workflows synchronized successfully
