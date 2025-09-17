@@ -17,6 +17,7 @@ env:
   ECS_SERVICE: aws-devops-app-service
   CONTAINER_NAME: app
   PORT: 3000
+  IMAGE_TAG: latest
 
 jobs:
   build-and-deploy:
@@ -33,41 +34,43 @@ jobs:
           role-to-assume: arn:aws:iam::714577032316:role/GitHubActions-ECS-Role-1
           aws-region: ${{ env.AWS_REGION }}
 
-
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, Tag, and Push Docker Image to ECR
         run: |
-          IMAGE_TAG=latest
           ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
-          IMAGE_URI=$ECR_REGISTRY/${{ env.ECR_REPO }}:$IMAGE_TAG
+          IMAGE_URI=$ECR_REGISTRY/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
           docker build -t $IMAGE_URI ./app
           docker push $IMAGE_URI
 
       - name: Update ECS Task Definition
-        id: task-def
         run: |
+          # Get current task definition
           TASK_DEF=$(aws ecs describe-task-definition \
             --task-definition ${{ env.PROJECT_NAME }}-task \
-            --query taskDefinition)
-          
-          NEW_TASK_DEF=$(echo $TASK_DEF | \
-            jq --arg IMAGE_URI "$IMAGE_URI" \
-            --arg NAME "${{ env.CONTAINER_NAME }}" \
-            '.containerDefinitions[0].image=$IMAGE_URI | 
-             .family="${{ env.PROJECT_NAME }}-task"')
+            --query "taskDefinition" \
+            --output json)
 
+          # Strip read-only fields and update image
+          NEW_TASK_DEF=$(echo "$TASK_DEF" | jq --arg IMAGE_URI "$IMAGE_URI" '
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) |
+            .containerDefinitions[0].image = $IMAGE_URI
+          ')
+
+          # Save new task definition to file
           echo "$NEW_TASK_DEF" > new-task-def.json
 
+          # Register new task definition
           TASK_REVISION=$(aws ecs register-task-definition \
             --cli-input-json file://new-task-def.json \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
 
+          echo "TASK_REVISION=$TASK_REVISION"
           echo "TASK_REVISION=$TASK_REVISION" >> $GITHUB_ENV
 
       - name: Deploy to ECS Service
@@ -77,3 +80,4 @@ jobs:
             --service ${{ env.ECS_SERVICE }} \
             --task-definition $TASK_REVISION \
             --force-new-deployment
+
